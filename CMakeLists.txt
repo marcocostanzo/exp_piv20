@@ -2,12 +2,20 @@ cmake_minimum_required(VERSION 2.8.3)
 project(exp_piv20)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+ add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED
+roscpp
+sun_plan_msgs
+iiwa_interp
+moveit_ros_planning_interface
+moveit_msgs
+geometry_msgs
+iiwa_msgs
+)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -113,7 +121,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
 # include
-# ${catkin_INCLUDE_DIRS}
+ ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -193,3 +201,7 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(rlabplanner_client_v src/rlabplanner_client_v.cpp)
+target_link_libraries(rlabplanner_client_v ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(rlabplanner_client_v ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

@@ -1,0 +1,44 @@
+<launch>
+  <!-- Debug Info -->
+  <arg name="debug" default="false" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+
+  <node name="rlabplanner_client_v" pkg="exp_piv20" type="rlabplanner_client_v" respawn="false" launch-prefix="$(arg launch_prefix)" output="screen">
+
+    <param name="objDimX" value="0.065" />
+    <param name="objDimY" value="0.065" />
+    <param name="objDimZ" value="0.055" />
+
+    <param name="objPosX" value="0.71" />  
+    <param name="objPosY" value="-0.27" />  
+    <param name="objPosZ" value="0.0375" />  
+    <param name="objPosZdelta" value="0.015" /> 
+ 
+    <param name="hTable" value="0.85" />
+    <param name="hShelf" value="0.162" />
+    <param name="hPickZ" value="0.11" /> 
+
+    <param name="pickAngleX" value="-1.57075" />  
+    <param name="pickAngleY" value="0.785" /> <!-- 0.785 = M_PI/4.0-->
+    <param name="pickAngleZ" value="0.0" />  
+
+    <param name="objPlaceX" value="0.697" />
+    <param name="objPlaceY" value="0.60" />  
+    <param name="objPlaceZ" value="0.0275" />
+    <param name="objPlaceYdelta" value="-0.20" />  
+
+    <param name="dim1_position_constraint" value="0.0005" />  
+
+    <param name="group_name" value="iiwa_manipulator_dummy" />  
+    <param name="num_joints" value="8" />  
+    <param name="link_ee_name" value="iiwa_link_ee" />  
+    <param name="link_dummy_name" value="iiwa_link_dummy" />  
+    <param name="activate_pivoting" value="true" />  
+    <param name="path_urdf_model" value="$(find iiwa_description)/urdf/iiwa7_tool_txt.txt" />  
+    <param name="path_urdf_augmented" value="$(find iiwa_description)/urdf/iiwa7_pivoting_txt.txt" />  
+
+  </node>
+
+
+</launch>

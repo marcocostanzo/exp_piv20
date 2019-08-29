@@ -50,6 +50,14 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
 
+  <depend>sun_plan_msgs</depend>
+<depend>roscpp</depend>
+<depend>iiwa_interp</depend>
+
+  <depend>moveit_msgs</depend>
+<depend>geometry_msgs</depend>
+<depend>iiwa_msgs</depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
