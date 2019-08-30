@@ -20,6 +20,8 @@
 // TF2
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+using namespace std;
+
 
 // Params to be read from the launch file
 int NUM_ITER, num_joints;
@@ -46,6 +48,7 @@ bool finished_before_timeout = false;
 std::vector<double> current_joint_values;
 
 sun_plan_msgs::RLabplannerGoal plannerGoal;
+iiwa_interp::RLabinterpolationGoal interpGoal;
 
 void getCurretRobotConfig(std::string group_name_)
 {
@@ -64,15 +67,15 @@ void getCurretRobotConfig(std::string group_name_)
 								current_joint_values[7]);
 }
 
-void fillPlannerActionMsg(	std::string group_name_,
+void fillPlannerActionMsg(	const std::string& group_name_,
 			int num_joints_,
-			geometry_msgs::Pose target_pose_,
-			moveit_msgs::Constraints path_constraints_,
+			const geometry_msgs::Pose& target_pose_,
+			const moveit_msgs::Constraints& path_constraints_,
 			bool activate_pivoting_,
-			std::string path_urdf_model_,
-			std::string path_urdf_augmented_,
-			std::string link_ee_name_,
-			std::string link_dummy_name_)
+			const std::string& path_urdf_model_,
+			const std::string& path_urdf_augmented_,
+			const std::string& link_ee_name_,
+			const std::string& link_dummy_name_)
 {
 	plannerGoal.group_name 			= group_name_;
 	plannerGoal.num_joints 			= num_joints_;
@@ -90,10 +93,25 @@ void fillPlannerActionMsg(	std::string group_name_,
 
 }
 
-void fillInterpolationActionMsg()
+void fillInterpolationActionMsg( const trajectory_msgs::JointTrajectory& planned_trajectory )
 {
 
+  interpGoal.planned_trajectory = planned_trajectory;
+
 }
+
+void fill_vectors( const sun_plan_msgs::RLabplannerResultConstPtr& result,  std::vector< trajectory_msgs::JointTrajectory >& all_traj, std::vector<int>& sequence_vec )
+{
+  for( auto & traj : result->planned_trajectories )
+  {
+    all_traj.push_back( traj );
+  }
+  for( auto & seq : result->sequence )
+  {
+    sequence_vec.push_back( seq );
+  }
+}
+
 
 
 void addCollisionObject(moveit::planning_interface::PlanningSceneInterface& planning_scene_interface)
@@ -164,11 +182,8 @@ int main (int argc, char **argv)
   ROS_INFO("PLANNER ACTION SERVER started, sending plannerGoal.");
 
   ROS_INFO("Waiting for action INTERPOLATION ACTION SERVER to start.");
-  //ac_interp.waitForServer();
+  ac_interp.waitForServer();
   ROS_INFO("INTERPOLATION ACTION SERVER started, sending plannerGoal.");
-
-  actionlib::SimpleClientGoalState plannerState;
-  actionlib::SimpleClientGoalState interpolatorState;
 
   moveit::planning_interface::MoveGroupInterface group(group_name);
   current_joint_values.resize(num_joints);
@@ -179,6 +194,10 @@ int main (int argc, char **argv)
   moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
   addCollisionObject(planning_scene_interface);
   ros::WallDuration(1.0).sleep();
+
+  //Initialize trajs
+  std::vector< trajectory_msgs::JointTrajectory > all_traj;
+  std::vector<int> sequence_vec;
 
   // PRE-PICK
   orientation.setRPY(pickAngleX, pickAngleY, pickAngleZ);
@@ -191,14 +210,15 @@ int main (int argc, char **argv)
   finished_before_timeout = ac_planner.waitForResult(ros::Duration(180.0));  //wait for the action to return
   if (finished_before_timeout)
   {
-    plannerState = ac_planner.getState();
+    actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
-    finished_before_timeout = false;
+    exit(-1);
   }
   else
     ROS_INFO("Action did not finish before the time out.");
 
-  //sun_plan_msgs::RLabplannerActionResultConstPtr plannerResult = ac_planner.getResult();
+  fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
+
 
 
   // PICK
@@ -212,12 +232,14 @@ int main (int argc, char **argv)
   finished_before_timeout = ac_planner.waitForResult(ros::Duration(180.0));  //wait for the action to return
   if (finished_before_timeout)
   {
-    plannerState = ac_planner.getState();
+    actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
-    finished_before_timeout = false;
+    exit(-1);
   }
   else
     ROS_INFO("Action did not finish before the time out.");
+
+  fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
   // ATTACHED OBJECT 
   attached_object = group.attachObject("object", group.getEndEffectorLink().c_str());
@@ -245,12 +267,13 @@ int main (int argc, char **argv)
   finished_before_timeout = ac_planner.waitForResult(ros::Duration(180.0));  //wait for the action to return
   if (finished_before_timeout)
   {
-    plannerState = ac_planner.getState();
+    actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
-    finished_before_timeout = false;
+    exit(-1);
   }
   else
     ROS_INFO("Action did not finish before the time out.");
+  fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
   // PRE-PLACE
   orientation.setRPY(pickAngleX, pickAngleY, M_PI/2.0);
@@ -272,12 +295,13 @@ int main (int argc, char **argv)
   finished_before_timeout = ac_planner.waitForResult(ros::Duration(180.0));  //wait for the action to return
   if (finished_before_timeout)
   {
-    plannerState = ac_planner.getState();
+    actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
-    finished_before_timeout = false;
+    exit(-1);
   }
   else
     ROS_INFO("Action did not finish before the time out.");
+  fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
   // PLACE
   orientation.setRPY(pickAngleX, pickAngleY, M_PI/2.0);
@@ -299,12 +323,13 @@ int main (int argc, char **argv)
   finished_before_timeout = ac_planner.waitForResult(ros::Duration(1800.0));  //wait for the action to return
   if (finished_before_timeout)
   {
-    plannerState = ac_planner.getState();
+    actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
-    finished_before_timeout = false;
+    exit(-1);
   }
   else
     ROS_INFO("Action did not finish before the time out.");
+  fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
   // DETACH OBJECT
   ros::WallDuration(2.0).sleep();
@@ -324,12 +349,43 @@ int main (int argc, char **argv)
   finished_before_timeout = ac_planner.waitForResult(ros::Duration(180.0));  //wait for the action to return
   if (finished_before_timeout)
   {
-    plannerState = ac_planner.getState();
+    actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
-    finished_before_timeout = false;
+    exit(-1);
   }
   else
     ROS_INFO("Action did not finish before the time out.");
+  fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
+
+  //ESECUZIONE
+  for( int i=0; i<all_traj.size(); i++ )
+  {
+    switch (sequence_vec[i])
+    {
+      case 0:{
+        cout << "MOTION_STANDARD" << endl;
+        break;
+      }
+      case 1:{
+        cout << "MOTION_PIVOTING" << endl;
+        break;
+      }
+      default:{
+        cout << "INVALID SEQUENCE" << endl;
+        exit(-1);
+      }
+    }
+
+    fillInterpolationActionMsg( all_traj[i] );
+    ac_interp.sendGoal(interpGoal);
+    ac_interp.waitForResult();
+
+    if( !ac_interp.getResult()->interpolation_success ){
+      cout << "Error in interpolator" << endl;
+      exit(-1);
+    }
+    
+  }
 
 
   //exit
