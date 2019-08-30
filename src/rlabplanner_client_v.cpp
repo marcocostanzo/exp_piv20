@@ -22,6 +22,32 @@
 
 using namespace std;
 
+char askForChar( const char* str){
+	/* USAGE
+	char ans = askForChar( "Continue? [y = YES / n = nextIter / e = exit ]: " );
+		switch( ans ){
+			case 'n' :
+			case 'N' :
+				continue;
+			case 'y' :
+			case 'Y' :
+			case 's' :
+			case 'S' :
+				break;
+			default:
+				exit(1);			
+		}
+		ans = 0;
+	*/
+
+	char ans;
+	cout << str;
+	cin >> ans;
+	cout << endl;
+
+	return ans;
+}
+
 
 // Params to be read from the launch file
 int NUM_ITER, num_joints;
@@ -29,7 +55,7 @@ double 	objDimX, objDimY, objDimZ,
 	objPosX, objPosY, objPosZ, objPosZdelta,
 	hTable, hShelf, hPickZ,
 	pickAngleX, pickAngleY, pickAngleZ,
-	objPlaceX, objPlaceY, objPlaceZ, objPlaceYdelta,
+	objPlaceX, objPlaceY, objPlaceZ, objPlaceRetraitZ, objPlaceYdelta, objPlaceYretrait,
 	dim1_position_constraint;
 std::string 	group_name,
 		path_urdf_model,
@@ -160,6 +186,8 @@ int main (int argc, char **argv)
   nodehandle.getParam("objPlaceY", objPlaceY);
   nodehandle.getParam("objPlaceZ", objPlaceZ);
   nodehandle.getParam("objPlaceYdelta", objPlaceYdelta);
+  nodehandle.getParam("objPlaceRetraitZ", objPlaceRetraitZ);
+  nodehandle.getParam("objPlaceYretrait", objPlaceYretrait);
   nodehandle.getParam("dim1_position_constraint", dim1_position_constraint);
   nodehandle.getParam("group_name", group_name);
   nodehandle.getParam("num_joints", num_joints);
@@ -212,10 +240,11 @@ int main (int argc, char **argv)
   {
     actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
+  }
+  else{
+    ROS_INFO("Action did not finish before the time out.");
     exit(-1);
   }
-  else
-    ROS_INFO("Action did not finish before the time out.");
 
   fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
@@ -234,10 +263,11 @@ int main (int argc, char **argv)
   {
     actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
+    }
+  else{
+    ROS_INFO("Action did not finish before the time out.");
     exit(-1);
   }
-  else
-    ROS_INFO("Action did not finish before the time out.");
 
   fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
@@ -269,10 +299,11 @@ int main (int argc, char **argv)
   {
     actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
+    }
+  else{
+    ROS_INFO("Action did not finish before the time out.");
     exit(-1);
   }
-  else
-    ROS_INFO("Action did not finish before the time out.");
   fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
   // PRE-PLACE
@@ -280,7 +311,7 @@ int main (int argc, char **argv)
   target_pose.orientation = tf2::toMsg(orientation);
   target_pose.position.x = objPlaceX;
   target_pose.position.y = objPlaceY + objPlaceYdelta;
-  target_pose.position.z = hTable + hShelf + objPosZ + objPosZdelta;
+  target_pose.position.z = hTable + hShelf + objPlaceZ;
   ROS_INFO("Applico il constraint in orientamento sul dummy");
   ocm.link_name = group.getEndEffectorLink().c_str();
   ocm.header.frame_id = group.getEndEffectorLink().c_str();
@@ -297,10 +328,11 @@ int main (int argc, char **argv)
   {
     actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
+    }
+  else{
+    ROS_INFO("Action did not finish before the time out.");
     exit(-1);
   }
-  else
-    ROS_INFO("Action did not finish before the time out.");
   fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
   // PLACE
@@ -308,7 +340,7 @@ int main (int argc, char **argv)
   target_pose.orientation = tf2::toMsg(orientation);
   target_pose.position.x = objPlaceX;
   target_pose.position.y = objPlaceY;
-  target_pose.position.z = hTable + hShelf + objPosZ + objPosZdelta;
+  target_pose.position.z = hTable + hShelf + objPosZ + 4*objPosZdelta;
   ROS_INFO("Applico il constraint in orientamento sul dummy");
   ocm.link_name = group.getEndEffectorLink().c_str();
   ocm.header.frame_id = group.getEndEffectorLink().c_str();
@@ -325,10 +357,11 @@ int main (int argc, char **argv)
   {
     actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
+    }
+  else{
+    ROS_INFO("Action did not finish before the time out.");
     exit(-1);
   }
-  else
-    ROS_INFO("Action did not finish before the time out.");
   fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
   // DETACH OBJECT
@@ -343,7 +376,7 @@ int main (int argc, char **argv)
   target_pose.orientation = tf2::toMsg(orientation);
   target_pose.position.x = objPlaceX;
   target_pose.position.y = objPlaceY + objPlaceYdelta;
-  target_pose.position.z = hTable + hShelf + objPosZ + objPosZdelta;
+  target_pose.position.z = hTable + hShelf + objPlaceZ;
   fillPlannerActionMsg(group_name, num_joints, target_pose, path_constraints_final, activate_pivoting, path_urdf_model, path_urdf_augmented, link_ee_name, link_dummy_name);
   ac_planner.sendGoal(plannerGoal);
   finished_before_timeout = ac_planner.waitForResult(ros::Duration(180.0));  //wait for the action to return
@@ -351,15 +384,53 @@ int main (int argc, char **argv)
   {
     actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
     ROS_INFO("Action finished: %s", plannerState.toString().c_str());
+    }
+  else{
+    ROS_INFO("Action did not finish before the time out.");
     exit(-1);
   }
-  else
+  fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
+
+
+  // SAFE-RETREAT
+  orientation.setRPY(pickAngleX, pickAngleY, M_PI/2.0);
+  target_pose.orientation = tf2::toMsg(orientation);
+  target_pose.position.x = objPlaceX;
+  target_pose.position.y = objPlaceY + objPlaceYretrait;
+  target_pose.position.z = hTable + hShelf + objPlaceZ + objPlaceRetraitZ;
+  fillPlannerActionMsg(group_name, num_joints, target_pose, path_constraints_final, activate_pivoting, path_urdf_model, path_urdf_augmented, link_ee_name, link_dummy_name);
+  ac_planner.sendGoal(plannerGoal);
+  finished_before_timeout = ac_planner.waitForResult(ros::Duration(180.0));  //wait for the action to return
+  if (finished_before_timeout)
+  {
+    actionlib::SimpleClientGoalState plannerState = ac_planner.getState();
+    ROS_INFO("Action finished: %s", plannerState.toString().c_str());
+    }
+  else{
     ROS_INFO("Action did not finish before the time out.");
+    exit(-1);
+  }
   fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
   //ESECUZIONE
   for( int i=0; i<all_traj.size(); i++ )
   {
+cout << "traj " << i << "last time = " << all_traj[i].points.back().time_from_start.toSec() << endl;
+char ans = askForChar( "Continue? [y = YES / n = no / e = exit ]: " );
+		switch( ans ){
+			case 'n' :
+			case 'N' :{
+				exit(-1);
+			        break;}
+			case 'y' :
+			case 'Y' :
+			case 's' :
+			case 'S' :
+				break;
+			default:
+				exit(1);			
+		}
+		ans = 0;
     switch (sequence_vec[i])
     {
       case 0:{
@@ -377,8 +448,11 @@ int main (int argc, char **argv)
     }
 
     fillInterpolationActionMsg( all_traj[i] );
+cout << "traj " << i << "sending..." << endl;
     ac_interp.sendGoal(interpGoal);
+cout << "traj " << i << "wait" << endl;
     ac_interp.waitForResult();
+cout << "traj " << i << "end" << endl;
 
     if( !ac_interp.getResult()->interpolation_success ){
       cout << "Error in interpolator" << endl;

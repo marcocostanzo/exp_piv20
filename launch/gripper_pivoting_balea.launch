@@ -10,10 +10,10 @@
     <param name="objDimY" value="0.065" />
     <param name="objDimZ" value="0.055" />
 
-    <param name="objPosX" value="0.71" />  
+    <param name="objPosX" value="0.75" />  
     <param name="objPosY" value="-0.27" />  
     <param name="objPosZ" value="0.0375" />  
-    <param name="objPosZdelta" value="0.015" /> 
+    <param name="objPosZdelta" value="0.005" /> 
  
     <param name="hTable" value="0.85" />
     <param name="hShelf" value="0.162" />
@@ -24,9 +24,11 @@
     <param name="pickAngleZ" value="0.0" />  
 
     <param name="objPlaceX" value="0.697" />
-    <param name="objPlaceY" value="0.60" />  
-    <param name="objPlaceZ" value="0.0275" />
+    <param name="objPlaceY" value="0.56" />  
+    <param name="objPlaceZ" value="0.060" />
+    <param name="objPlaceRetraitZ" value="0.10" />
     <param name="objPlaceYdelta" value="-0.20" />  
+    <param name="objPlaceYretrait" value="-0.25" />  
 
     <param name="dim1_position_constraint" value="0.0005" />  
 
