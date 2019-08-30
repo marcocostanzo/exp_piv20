@@ -15,6 +15,7 @@ moveit_ros_planning_interface
 moveit_msgs
 geometry_msgs
 iiwa_msgs
+slipping_control_common
 )
 
 ## System dependencies are found with CMake's conventions

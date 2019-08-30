@@ -20,6 +20,14 @@
 // TF2
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+#include "slipping_control_common/Slipping_Control_Client.h"
+
+#define GRIPPER_ACTIVE true
+#define SEQUENCE_GRASP 2
+#define SEQUENCE_RELEASE 3
+#define SEQUENCE_GRIPPER_PIV 1
+#define SEQUENCE_SA 0
+
 using namespace std;
 
 char askForChar( const char* str){
@@ -138,6 +146,11 @@ void fill_vectors( const sun_plan_msgs::RLabplannerResultConstPtr& result,  std:
   }
 }
 
+void modify_last_sequence( const sun_plan_msgs::RLabplannerResultConstPtr& result, int sequence_type , std::vector<int>& sequence_vec )
+{
+  sequence_vec[ sequence_vec.size() - result->planned_trajectories.size() ] = sequence_type;
+}
+
 
 
 void addCollisionObject(moveit::planning_interface::PlanningSceneInterface& planning_scene_interface)
@@ -204,6 +217,10 @@ int main (int argc, char **argv)
   sun_plan_msgs::RLabplannerResult result_;
   sun_plan_msgs::RLabplannerFeedback feedback_;
   ros::Rate r(1000);
+
+  Slipping_Control_Client slipping_control(nodehandle, GRIPPER_ACTIVE);
+
+  slipping_control.home();
 
   ROS_INFO("Waiting for action PLANNER ACTION SERVER to start.");
   ac_planner.waitForServer();
@@ -305,6 +322,7 @@ int main (int argc, char **argv)
     exit(-1);
   }
   fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
+  modify_last_sequence( ac_planner.getResult(), SEQUENCE_GRASP ,sequence_vec );
 
   // PRE-PLACE
   orientation.setRPY(pickAngleX, pickAngleY, M_PI/2.0);
@@ -390,6 +408,7 @@ int main (int argc, char **argv)
     exit(-1);
   }
   fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
+  modify_last_sequence( ac_planner.getResult(), SEQUENCE_RELEASE ,sequence_vec );
 
 
   // SAFE-RETREAT
@@ -433,12 +452,26 @@ char ans = askForChar( "Continue? [y = YES / n = no / e = exit ]: " );
 		ans = 0;
     switch (sequence_vec[i])
     {
-      case 0:{
-        cout << "MOTION_STANDARD" << endl;
+      case SEQUENCE_SA:{
+        cout << "MOTION_SLIPPING_AVOIDANCE" << endl;
+        slipping_control.slipping_avoidance(true);
         break;
       }
-      case 1:{
-        cout << "MOTION_PIVOTING" << endl;
+      case SEQUENCE_GRIPPER_PIV:{
+        cout << "SEQUENCE_GRIPPER_PIV" << endl;
+        slipping_control.gripper_pivoting();
+        break;
+      }
+      case SEQUENCE_GRASP:{
+        cout << "SEQUENCE_GRASP" << endl;
+        slipping_control.grasp(2.0);
+        slipping_control.slipping_avoidance(true);
+        break;
+      }
+      case SEQUENCE_RELEASE:{
+        cout << "SEQUENCE_RELEASE" << endl;
+        slipping_control.grasp(0.0);
+        slipping_control.home();
         break;
       }
       default:{
