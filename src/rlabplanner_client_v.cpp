@@ -16,6 +16,7 @@
 #include <moveit_msgs/PlanningScene.h>
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include "std_msgs/Float64MultiArray.h"
+#include <iiwa_msgs/JointPosition.h>
 
 // TF2
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -63,6 +64,8 @@ std::string 	group_name,
 		link_ee_name,
 		link_dummy_name;
 bool activate_pivoting;
+bool start_conf_acquired = false;
+ros::Subscriber iiwa_current_state;
 
 geometry_msgs::Pose target_pose;
 tf2::Quaternion orientation;
@@ -72,6 +75,7 @@ moveit_msgs::OrientationConstraint ocm;
 bool attached_object = false;
 bool finished_before_timeout = false;
 std::vector<double> current_joint_values;
+std::vector<double> start_joint_values;
 
 sun_plan_msgs::RLabplannerGoal plannerGoal;
 iiwa_interp::RLabinterpolationGoal interpGoal;
@@ -80,7 +84,7 @@ void getCurretRobotConfig(std::string group_name_)
 {
 	moveit::planning_interface::MoveGroupInterface group(group_name_);
 	robot_state::RobotState start_state(*group.getCurrentState());
-	const robot_model::JointModelGroup* joint_model_group = start_state.getJointModelGroup("iiwa_manipulator_dummy");
+	const robot_model::JointModelGroup* joint_model_group = start_state.getJointModelGroup(group_name_);
 	start_state.copyJointGroupPositions(joint_model_group, current_joint_values);
 	ROS_INFO("CURRENT JOINT CONFIGURATION ---> current_joint_values.size() = %d", current_joint_values.size());
 	ROS_INFO("%f, %f, %f, %f, %f, %f, %f, %f", 		current_joint_values[0], 
@@ -93,6 +97,49 @@ void getCurretRobotConfig(std::string group_name_)
 								current_joint_values[7]);
 }
 
+void setInitialPosition()
+  {
+
+    ros::NodeHandle nh;
+    sleep(2);
+    ros::Publisher fake_state = nh.advertise<sensor_msgs::JointState>("/move_group/fake_controller_joint_states", 1);	
+    sensor_msgs::JointState joint_state;
+        joint_state.name.push_back("iiwa_joint_1");
+	joint_state.name.push_back("iiwa_joint_2");
+	joint_state.name.push_back("iiwa_joint_3");
+	joint_state.name.push_back("iiwa_joint_4");
+	joint_state.name.push_back("iiwa_joint_5");
+	joint_state.name.push_back("iiwa_joint_6");
+	joint_state.name.push_back("iiwa_joint_7");
+	joint_state.position.push_back(start_joint_values[0]);
+	joint_state.position.push_back(start_joint_values[1]);
+	joint_state.position.push_back(start_joint_values[2]);
+	joint_state.position.push_back(start_joint_values[3]);
+	joint_state.position.push_back(start_joint_values[4]);
+	joint_state.position.push_back(start_joint_values[5]);
+	joint_state.position.push_back(start_joint_values[6]); 
+    for(int i = 0; i < 3; i++)
+	{
+		fake_state.publish(joint_state);
+		sleep(1);
+	}
+char ans = askForChar( "Initial confing set - Continue? [y = YES / n = no / e = exit ]: " );
+		switch( ans ){
+			case 'n' :
+			case 'N' :{
+				exit(-1);
+			        break;}
+			case 'y' :
+			case 'Y' :
+			case 's' :
+			case 'S' :
+				break;
+			default:
+				exit(1);			
+		}
+		ans = 0;
+ }
+
 void fillPlannerActionMsg(	const std::string& group_name_,
 			int num_joints_,
 			const geometry_msgs::Pose& target_pose_,
@@ -101,7 +148,8 @@ void fillPlannerActionMsg(	const std::string& group_name_,
 			const std::string& path_urdf_model_,
 			const std::string& path_urdf_augmented_,
 			const std::string& link_ee_name_,
-			const std::string& link_dummy_name_)
+			const std::string& link_dummy_name_
+			)
 {
 	plannerGoal.group_name 			= group_name_;
 	plannerGoal.num_joints 			= num_joints_;
@@ -160,6 +208,21 @@ void addCollisionObject(moveit::planning_interface::PlanningSceneInterface& plan
 	planning_scene_interface.applyCollisionObject(collision_object);
 }
 
+void readJointPos(const iiwa_msgs::JointPosition jointStateMsg)
+{
+	start_joint_values[0] = jointStateMsg.position.a1;
+	start_joint_values[1] = jointStateMsg.position.a2;
+	start_joint_values[2] = jointStateMsg.position.a3;
+	start_joint_values[3] = jointStateMsg.position.a4;
+	start_joint_values[4] = jointStateMsg.position.a5;
+	start_joint_values[5] = jointStateMsg.position.a6;
+	start_joint_values[6] = jointStateMsg.position.a7;
+        //ROS_INFO("ACQUISITA!!!!!!!!!!!!!!!");
+	start_conf_acquired = true;	
+	//iiwa_current_state.shutdown();
+}
+
+
 int main (int argc, char **argv)
 {
   ros::init(argc, argv, "rlabplanner_client_v");
@@ -197,13 +260,12 @@ int main (int argc, char **argv)
   nodehandle.getParam("link_ee_name", link_ee_name);
   nodehandle.getParam("link_dummy_name", link_dummy_name);
 
-  // Starting the pipeline
   // True causes the client to spin its own thread
   actionlib::SimpleActionClient<sun_plan_msgs::RLabplannerAction> ac_planner("rlabplanner", true);
   actionlib::SimpleActionClient<iiwa_interp::RLabinterpolationAction> ac_interp("rlabinterpolation", true);
   sun_plan_msgs::RLabplannerResult result_;
   sun_plan_msgs::RLabplannerFeedback feedback_;
-  ros::Rate r(1000);
+  ros::Rate* loop_rate = new ros::Rate(1000); 
 
   ROS_INFO("Waiting for action PLANNER ACTION SERVER to start.");
   ac_planner.waitForServer();
@@ -212,6 +274,20 @@ int main (int argc, char **argv)
   ROS_INFO("Waiting for action INTERPOLATION ACTION SERVER to start.");
   ac_interp.waitForServer();
   ROS_INFO("INTERPOLATION ACTION SERVER started, sending plannerGoal.");
+
+  // Starting the pipeline
+  iiwa_current_state = nh.subscribe("/iiwa/state/JointPosition", 1, readJointPos);
+
+  ROS_INFO("Read current robot start configuration..");
+  start_joint_values.resize(7);
+  while(start_conf_acquired == false)
+  {
+     ros::spinOnce();   
+     loop_rate->sleep();  
+  }
+  iiwa_current_state.shutdown();
+
+  setInitialPosition();
 
   moveit::planning_interface::MoveGroupInterface group(group_name);
   current_joint_values.resize(num_joints);
