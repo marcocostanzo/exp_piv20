@@ -530,12 +530,14 @@ char ans = askForChar( "Continue? [y = YES / n = no / e = exit ]: " );
     {
       case SEQUENCE_SA:{
         cout << "MOTION_SLIPPING_AVOIDANCE" << endl;
-        slipping_control.slipping_avoidance(true);
+        if( slipping_control.is_grasped() )
+          slipping_control.slipping_avoidance(true);
         break;
       }
       case SEQUENCE_GRIPPER_PIV:{
         cout << "SEQUENCE_GRIPPER_PIV" << endl;
-        slipping_control.gripper_pivoting();
+        if( slipping_control.is_grasped() )
+          slipping_control.gripper_pivoting();
         break;
       }
       case SEQUENCE_GRASP:{
