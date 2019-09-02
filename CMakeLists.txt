@@ -206,3 +206,7 @@ include_directories(
 add_executable(rlabplanner_client_v src/rlabplanner_client_v.cpp)
 target_link_libraries(rlabplanner_client_v ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(rlabplanner_client_v ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(rlabplanner_client_denkmit src/rlabplanner_client_denkmit.cpp)
+target_link_libraries(rlabplanner_client_denkmit ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(rlabplanner_client_denkmit ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

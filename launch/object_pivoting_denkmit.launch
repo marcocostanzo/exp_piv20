@@ -1,0 +1,65 @@
+<launch>
+  <!-- Debug Info -->
+  <arg name="debug" default="false" />
+  <arg unless="$(arg debug)" name="launch_prefix" value="" />
+  <arg     if="$(arg debug)" name="launch_prefix" value="gdb --ex run --args" />
+
+  <node name="rlabplanner_client_v" pkg="exp_piv20" type="rlabplanner_client_denkmit" respawn="false" launch-prefix="$(arg launch_prefix)" output="screen">
+
+    <param name="objDimX" value="0.140" />
+    <param name="objDimY" value="0.060" />
+    <param name="objDimZ" value="0.040" />
+
+    <param name="objPosX" value="0.770" />  
+    <param name="objPosY" value="-0.1375" />  
+    <param name="objPosZ" value="0.030" />  
+
+    <param name="prePickPosZdelta" value="0.11" />
+
+    <param name="pickPosXdelta" value="-0.015" /> 
+    <param name="pickPosYdelta" value="0.0" /> 
+    <param name="pickPosZdelta" value="0.0" /> 
+ 
+    <param name="hTable" value="0.85" />  
+    <param name="hShelf" value="0.157" />  
+
+    <param name="pickAngleX" value="-1.57075" />  
+    <param name="pickAngleY" value="0.0" /> <!-- 0.785 = M_PI/4.0-->
+    <param name="pickAngleZ" value="0.0" />  
+
+    <param name="prePlaceAngleX" value="-1.57075" />  
+    <param name="prePlaceAngleY" value="0.0" /> <!-- 0.785 = M_PI/4.0-->
+    <param name="prePlaceAngleZ" value="1.57075" /> 
+
+    <param name="placeAngleX" value="3.1415" />  
+    <param name="placeAngleY" value="1.57075" /> <!-- 0.785 = M_PI/4.0-->
+    <param name="placeAngleZ" value="0.0" /> 
+
+    <param name="prePlaceXdelta" value="0.0" /> 
+    <param name="prePlaceYdelta" value="-0.3" /> 
+    <param name="prePlaceZdelta" value="0.0" /> 
+
+    <param name="placePosX" value="0.70" />
+    <param name="placePosY" value="0.60" />  
+    <param name="placePosZdelta" value="0.02" />
+
+    <param name="hShelfMultipler" value="2.0" />
+
+    <param name="safeRetraitXdelta" value="0.0" />
+    <param name="safeRetraitYdelta" value="0.0" />
+    <param name="safeRetraitZdelta" value="0.1" />
+
+    <param name="dim1_position_constraint" value="0.0005" />  
+
+    <param name="group_name" value="iiwa_manipulator_dummy" />  
+    <param name="num_joints" value="8" />  
+    <param name="link_ee_name" value="iiwa_link_ee" />  
+    <param name="link_dummy_name" value="iiwa_link_dummy" />  
+    <param name="activate_pivoting" value="true" />  
+    <param name="path_urdf_model" value="$(find iiwa_description)/urdf/iiwa7_tool_txt.txt" />  
+    <param name="path_urdf_augmented" value="$(find iiwa_description)/urdf/iiwa7_pivoting_txt.txt" />    
+
+  </node>
+
+
+</launch>

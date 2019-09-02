@@ -61,11 +61,17 @@ char askForChar( const char* str){
 // Params to be read from the launch file
 int NUM_ITER, num_joints;
 double 	objDimX, objDimY, objDimZ,
-	objPosX, objPosY, objPosZ, objPosZdelta,
-	hTable, hShelf, hPickZ,
+	objPosX, objPosY, objPosZ,
+	hTable, hShelf,
 	pickAngleX, pickAngleY, pickAngleZ,
-	objPlaceX, objPlaceY, objPlaceZ, objPlaceRetraitZ, objPlaceYdelta, objPlaceYretrait,
+   prePlaceAngleX, prePlaceAngleY, prePlaceAngleZ,
+   placeAngleX, placeAngleY, placeAngleZ,
+   prePickPosZdelta, pickPosXdelta, pickPosYdelta, pickPosZdelta,
+   prePlaceXdelta, prePlaceYdelta, prePlaceZdelta,
+   placePosX, placePosY, placePosZdelta, hShelfMultipler,
+   safeRetraitXdelta, safeRetraitYdelta, safeRetraitZdelta,
 	dim1_position_constraint;
+
 std::string 	group_name,
 		path_urdf_model,
 		path_urdf_augmented,
@@ -239,7 +245,7 @@ void readJointPos(const iiwa_msgs::JointPosition jointStateMsg)
 
 int main (int argc, char **argv)
 {
-  ros::init(argc, argv, "rlabplanner_client_v");
+  ros::init(argc, argv, "rlabplanner_client_denkmit");
   ros::NodeHandle nh;
   ros::NodeHandle nodehandle("~");
   ros::AsyncSpinner spinner(1);
@@ -252,19 +258,36 @@ int main (int argc, char **argv)
   nodehandle.getParam("objPosX", objPosX);
   nodehandle.getParam("objPosY", objPosY);
   nodehandle.getParam("objPosZ", objPosZ);
-  nodehandle.getParam("objPosZdelta", objPosZdelta);
+
+  nodehandle.getParam("prePickPosZdelta", prePickPosZdelta);
+
+  nodehandle.getParam("pickPosXdelta", pickPosXdelta);
+  nodehandle.getParam("pickPosYdelta", pickPosYdelta);
+  nodehandle.getParam("pickPosZdelta", pickPosZdelta);
   nodehandle.getParam("hTable", hTable);
   nodehandle.getParam("hShelf", hShelf);
-  nodehandle.getParam("hPickZ", hPickZ);
   nodehandle.getParam("pickAngleX", pickAngleX);
   nodehandle.getParam("pickAngleY", pickAngleY);
   nodehandle.getParam("pickAngleZ", pickAngleZ);
-  nodehandle.getParam("objPlaceX", objPlaceX);
-  nodehandle.getParam("objPlaceY", objPlaceY);
-  nodehandle.getParam("objPlaceZ", objPlaceZ);
-  nodehandle.getParam("objPlaceYdelta", objPlaceYdelta);
-  nodehandle.getParam("objPlaceRetraitZ", objPlaceRetraitZ);
-  nodehandle.getParam("objPlaceYretrait", objPlaceYretrait);
+
+  nodehandle.getParam("prePlaceAngleX", prePlaceAngleX);
+  nodehandle.getParam("prePlaceAngleY", prePlaceAngleY);
+  nodehandle.getParam("prePlaceAngleZ", prePlaceAngleZ);
+  nodehandle.getParam("placeAngleX", placeAngleX);
+  nodehandle.getParam("placeAngleY", placeAngleY);
+  nodehandle.getParam("placeAngleZ", placeAngleZ);
+  nodehandle.getParam("prePlaceXdelta", prePlaceXdelta);
+  nodehandle.getParam("prePlaceYdelta", prePlaceYdelta);
+  nodehandle.getParam("prePlaceZdelta", prePlaceZdelta);
+  nodehandle.getParam("placePosX", placePosX);
+  nodehandle.getParam("placePosY", placePosY);
+  nodehandle.getParam("placePosZdelta", placePosZdelta);
+  nodehandle.getParam("hShelfMultipler", hShelfMultipler);
+
+  nodehandle.getParam("safeRetraitXdelta", safeRetraitXdelta);
+  nodehandle.getParam("safeRetraitYdelta", safeRetraitYdelta);
+  nodehandle.getParam("safeRetraitZdelta", safeRetraitZdelta);
+
   nodehandle.getParam("dim1_position_constraint", dim1_position_constraint);
   nodehandle.getParam("group_name", group_name);
   nodehandle.getParam("num_joints", num_joints);
@@ -324,9 +347,9 @@ int main (int argc, char **argv)
   // PRE-PICK
   orientation.setRPY(pickAngleX, pickAngleY, pickAngleZ);
   target_pose.orientation = tf2::toMsg(orientation);
-  target_pose.position.x = objPosX;
-  target_pose.position.y = objPosY;
-  target_pose.position.z = hTable + hShelf + objPosZ + objPosZdelta + hPickZ;
+  target_pose.position.x = objPosX + pickPosXdelta;
+  target_pose.position.y = objPosY + pickPosYdelta;
+  target_pose.position.z = hTable + hShelf + pickPosZdelta + objPosZ + prePickPosZdelta;
   fillPlannerActionMsg(group_name, num_joints, target_pose, path_constraints, activate_pivoting, path_urdf_model, path_urdf_augmented, link_ee_name, link_dummy_name);
   ac_planner.sendGoal(plannerGoal);
   finished_before_timeout = ac_planner.waitForResult(ros::Duration(180.0));  //wait for the action to return
@@ -347,9 +370,9 @@ int main (int argc, char **argv)
   // PICK
   orientation.setRPY(pickAngleX, pickAngleY, pickAngleZ);
   target_pose.orientation = tf2::toMsg(orientation);
-  target_pose.position.x = objPosX;
-  target_pose.position.y = objPosY;
-  target_pose.position.z = hTable + hShelf + objPosZ + objPosZdelta - 0.005;
+  target_pose.position.x = objPosX + pickPosXdelta;
+  target_pose.position.y = objPosY + pickPosYdelta;
+  target_pose.position.z = hTable + hShelf + pickPosZdelta + objPosZ;
   fillPlannerActionMsg(group_name, num_joints, target_pose, path_constraints, activate_pivoting, path_urdf_model, path_urdf_augmented, link_ee_name, link_dummy_name);
   ac_planner.sendGoal(plannerGoal);
   finished_before_timeout = ac_planner.waitForResult(ros::Duration(180.0));  //wait for the action to return
@@ -374,9 +397,9 @@ int main (int argc, char **argv)
   // PICK-RETREAT
   orientation.setRPY(pickAngleX, pickAngleY, pickAngleZ);
   target_pose.orientation = tf2::toMsg(orientation);
-  target_pose.position.x = objPosX;
-  target_pose.position.y = objPosY;
-  target_pose.position.z = hTable + hShelf + objPosZ + objPosZdelta + hPickZ;
+  target_pose.position.x = objPosX + pickPosXdelta;
+  target_pose.position.y = objPosY + pickPosYdelta;
+  target_pose.position.z = hTable + hShelf + pickPosZdelta + objPosZ + prePickPosZdelta;
   ROS_INFO("Applico il constraint in orientamento sul dummy");
   /*ocm.link_name = group.getEndEffectorLink().c_str();
   ocm.header.frame_id = group.getEndEffectorLink().c_str();
@@ -404,11 +427,11 @@ int main (int argc, char **argv)
 //goto execute;
 
   // PRE-PLACE
-  orientation.setRPY(pickAngleX, pickAngleY, M_PI/2.0);
+  orientation.setRPY(prePlaceAngleX, prePlaceAngleY, prePlaceAngleZ);
   target_pose.orientation = tf2::toMsg(orientation);
-  target_pose.position.x = objPlaceX;
-  target_pose.position.y = objPlaceY + objPlaceYdelta;
-  target_pose.position.z = hTable + hShelf + objPlaceZ;
+  target_pose.position.x = placePosX + prePlaceXdelta;
+  target_pose.position.y = placePosY + prePlaceYdelta;
+  target_pose.position.z = hTable + hShelfMultipler*hShelf + objDimX/2.0 + fabs(pickPosXdelta) + prePlaceZdelta;
   ROS_INFO("Applico il constraint in orientamento sul dummy");
   ocm.link_name = group.getEndEffectorLink().c_str();
   ocm.header.frame_id = group.getEndEffectorLink().c_str();
@@ -433,11 +456,11 @@ int main (int argc, char **argv)
   fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
   // PLACE
-  orientation.setRPY(pickAngleX, pickAngleY, M_PI/2.0);
+  orientation.setRPY(placeAngleX, placeAngleY, placeAngleZ);
   target_pose.orientation = tf2::toMsg(orientation);
-  target_pose.position.x = objPlaceX;
-  target_pose.position.y = objPlaceY;
-  target_pose.position.z = hTable + hShelf + objPosZ + 4*objPosZdelta;
+  target_pose.position.x = placePosX;
+  target_pose.position.y = placePosY;
+  target_pose.position.z = hTable + hShelfMultipler*hShelf + objDimX/2.0 + fabs(pickPosXdelta) + placePosZdelta;
   ROS_INFO("Applico il constraint in orientamento sul dummy");
   ocm.link_name = group.getEndEffectorLink().c_str();
   ocm.header.frame_id = group.getEndEffectorLink().c_str();
@@ -468,11 +491,11 @@ int main (int argc, char **argv)
   ROS_INFO("detach_object (1:true - 0:false) = %d", (int)detach_object);
 
   // RETREAT
-  orientation.setRPY(pickAngleX, pickAngleY, M_PI/2.0);
+  orientation.setRPY(prePlaceAngleX, prePlaceAngleY, prePlaceAngleZ);
   target_pose.orientation = tf2::toMsg(orientation);
-  target_pose.position.x = objPlaceX;
-  target_pose.position.y = objPlaceY + objPlaceYdelta;
-  target_pose.position.z = hTable + hShelf + objPlaceZ;
+  target_pose.position.x = placePosX + prePlaceXdelta;
+  target_pose.position.y = placePosY + prePlaceYdelta;
+  target_pose.position.z = hTable + hShelfMultipler*hShelf + objDimX/2.0 + fabs(pickPosXdelta) + prePlaceZdelta;
   fillPlannerActionMsg(group_name, num_joints, target_pose, path_constraints_final, activate_pivoting, path_urdf_model, path_urdf_augmented, link_ee_name, link_dummy_name);
   ac_planner.sendGoal(plannerGoal);
   finished_before_timeout = ac_planner.waitForResult(ros::Duration(180.0));  //wait for the action to return
@@ -490,11 +513,11 @@ int main (int argc, char **argv)
 
 
   // SAFE-RETREAT
-  orientation.setRPY(pickAngleX, pickAngleY, M_PI/2.0);
+  orientation.setRPY(prePlaceAngleX, prePlaceAngleY, prePlaceAngleZ);
   target_pose.orientation = tf2::toMsg(orientation);
-  target_pose.position.x = objPlaceX;
-  target_pose.position.y = objPlaceY + objPlaceYretrait;
-  target_pose.position.z = hTable + hShelf + objPlaceZ + objPlaceRetraitZ;
+  target_pose.position.x = placePosX + prePlaceXdelta + safeRetraitXdelta;
+  target_pose.position.y = placePosY + prePlaceYdelta + safeRetraitYdelta;
+  target_pose.position.z = hTable + hShelfMultipler*hShelf + objDimX/2.0 + fabs(pickPosXdelta) + prePlaceZdelta + safeRetraitZdelta;
   fillPlannerActionMsg(group_name, num_joints, target_pose, path_constraints_final, activate_pivoting, path_urdf_model, path_urdf_augmented, link_ee_name, link_dummy_name);
   ac_planner.sendGoal(plannerGoal);
   finished_before_timeout = ac_planner.waitForResult(ros::Duration(180.0));  //wait for the action to return
@@ -589,7 +612,6 @@ cout << "traj " << i << "end" << endl;
     }
     
   }
-
 
   //exit
   return 0;
