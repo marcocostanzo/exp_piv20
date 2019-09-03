@@ -79,6 +79,7 @@ std::string 	group_name,
 		link_dummy_name;
 bool activate_pivoting;
 bool start_conf_acquired = false;
+ros::Subscriber iiwa_current_state;
 
 geometry_msgs::Pose target_pose;
 tf2::Quaternion orientation;
@@ -90,7 +91,6 @@ bool detach_object = false;
 bool finished_before_timeout = false;
 std::vector<double> current_joint_values;
 std::vector<double> start_joint_values;
-std::vector<double> start_conf;
 
 sun_plan_msgs::RLabplannerGoal plannerGoal;
 iiwa_interp::RLabinterpolationGoal interpGoal;
@@ -242,86 +242,10 @@ void readJointPos(const iiwa_msgs::JointPosition jointStateMsg)
 	//iiwa_current_state.shutdown();
 }
 
-void realJointPosition()
-{
-   
-   cout << "realJointPosition" << endl;
-   ros::NodeHandle nh;
-
-   ros::Rate loop_rate = ros::Rate(1000);
-
-   ros::Subscriber iiwa_current_state = nh.subscribe("/iiwa/state/JointPosition", 1, readJointPos);
-	start_conf_acquired = false;
-  while(start_conf_acquired == false)
-  {
-     ros::spinOnce();   
-     loop_rate.sleep();  
-  }
-  iiwa_current_state.shutdown();
-  cout << "realJointPosition OK" << endl;
-  for(int i=0; i<start_joint_values.size(); i++){
-  	 cout << "a" << i << ":" << start_joint_values[i] << endl;
-  }
-
-}
-
-void goToInitialPos(actionlib::SimpleActionClient<iiwa_interp::RLabinterpolationAction>& ac_interp)
-{
-
-   char ans = askForChar( "goToInitialPos? [y = YES / n = no / e = exit ]: " );
-		switch( ans ){
-			case 'n' :
-			case 'N' :{
-				exit(-1);
-			        break;}
-			case 'y' :
-			case 'Y' :
-			case 's' :
-			case 'S' :
-				break;
-			default:
-				exit(1);			
-		}
-		ans = 0;
-
-   realJointPosition();
-
-	iiwa_interp::RLabinterpolationGoal interpGoal;
-	interpGoal.planned_trajectory.points.resize(2);
-	interpGoal.planned_trajectory.points[0].positions.resize(7);
-   interpGoal.planned_trajectory.points[0].velocities.resize(7);
-   interpGoal.planned_trajectory.points[0].accelerations.resize(7);
-   interpGoal.planned_trajectory.points[0].time_from_start = ros::Duration(0.0);
-
-	for( int j = 0; j<7; j++ ){
-
-     interpGoal.planned_trajectory.points[0].positions[j] = start_joint_values[j];
-     interpGoal.planned_trajectory.points[0].velocities[j] = 0.0;
-     interpGoal.planned_trajectory.points[0].accelerations[j] = 0.0;
-	}
-	
-   interpGoal.planned_trajectory.points[1].positions.resize(7);
-   interpGoal.planned_trajectory.points[1].velocities.resize(7);
-   interpGoal.planned_trajectory.points[1].accelerations.resize(7);
-   interpGoal.planned_trajectory.points[1].time_from_start = ros::Duration(10.0);
-	for( int j = 0; j<7; j++ ){
-
-     interpGoal.planned_trajectory.points[1].positions[j] = start_conf[j];
-     interpGoal.planned_trajectory.points[1].velocities[j] = 0.0;
-     interpGoal.planned_trajectory.points[1].accelerations[j] = 0.0;
-	}
-
-    ac_interp.sendGoal(interpGoal);
-    ac_interp.waitForResult(); 	
-
-  cout << "goToInitialPos() ok" << endl;
-	
-}
-
 
 int main (int argc, char **argv)
 {
-  ros::init(argc, argv, "rlabplanner_client_denkmit");
+  ros::init(argc, argv, "rlabplanner_client_denkmit_inclinato");
   ros::NodeHandle nh;
   ros::NodeHandle nodehandle("~");
   ros::AsyncSpinner spinner(1);
@@ -393,23 +317,16 @@ int main (int argc, char **argv)
   ROS_INFO("INTERPOLATION ACTION SERVER started, sending plannerGoal.");
 
   // Starting the pipeline
-
-  start_joint_values.resize(7);
-
-  start_conf.push_back(-0.730409085751);
-  start_conf.push_back(1.32398116589);
-  start_conf.push_back(1.97483479977);
-  start_conf.push_back(-1.42154753208);
-  start_conf.push_back(-0.187344014645);
-  start_conf.push_back(0.870962619781);
-  start_conf.push_back(-2.5709233284);
-
-  goToInitialPos(ac_interp);
-
+  iiwa_current_state = nh.subscribe("/iiwa/state/JointPosition", 1, readJointPos);
 
   ROS_INFO("Read current robot start configuration..");
-
-  realJointPosition();
+  start_joint_values.resize(7);
+  while(start_conf_acquired == false)
+  {
+     ros::spinOnce();   
+     loop_rate->sleep();  
+  }
+  iiwa_current_state.shutdown();
 
   setInitialPosition();
 
@@ -417,7 +334,6 @@ int main (int argc, char **argv)
   current_joint_values.resize(num_joints);
   for(int i = 0; i < num_joints; i++)
   	current_joint_values[i] = 0.0;
-
 
   //Add the object to be picked into the world scene
   moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
@@ -617,13 +533,7 @@ int main (int argc, char **argv)
   fill_vectors( ac_planner.getResult(),  all_traj, sequence_vec );
 
 execute:
-
   //ESECUZIONE
-while(true){
-
-goToInitialPos(ac_interp);
-slipping_control.home();
-
   for( int i=0; i<all_traj.size(); i++ )
   {
 cout << "traj " << i << "last time = " << all_traj[i].points.back().time_from_start.toSec() << endl;
@@ -702,8 +612,6 @@ cout << "traj " << i << "end" << endl;
     }
     
   }
-
-}
 
   //exit
   return 0;

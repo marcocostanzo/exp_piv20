@@ -210,3 +210,7 @@ add_dependencies(rlabplanner_client_v ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catk
 add_executable(rlabplanner_client_denkmit src/rlabplanner_client_denkmit.cpp)
 target_link_libraries(rlabplanner_client_denkmit ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 add_dependencies(rlabplanner_client_denkmit ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(rlabplanner_client_denkmit_inclinato src/rlabplanner_client_denkmit_inclinato.cpp)
+target_link_libraries(rlabplanner_client_denkmit_inclinato ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(rlabplanner_client_denkmit_inclinato ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

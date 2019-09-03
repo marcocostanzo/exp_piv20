@@ -18,7 +18,7 @@
 
     <param name="pickPosXdelta" value="-0.015" /> 
     <param name="pickPosYdelta" value="0.0" /> 
-    <param name="pickPosZdelta" value="-0.005" /> 
+    <param name="pickPosZdelta" value="0.0" /> 
  
     <param name="hTable" value="0.85" />  
     <param name="hShelf" value="0.157" />  
