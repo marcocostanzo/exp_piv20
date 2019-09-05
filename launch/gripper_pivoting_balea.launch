@@ -20,7 +20,7 @@
     <param name="hPickZ" value="0.11" /> 
 
     <param name="pickAngleX" value="-1.57075" />  
-    <param name="pickAngleY" value="0.785" /> <!-- 0.785 = M_PI/4.0-->
+    <param name="pickAngleY" value="0.785" /> <!-- 0.785 = M_PI/4.0     $(eval 45.0*3.1415/180.0)  --> 
     <param name="pickAngleZ" value="0.0" />  
 
     <param name="objPlaceX" value="0.697" />

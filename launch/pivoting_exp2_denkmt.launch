@@ -34,7 +34,7 @@
     <param name="placeAngleX" value="3.1415" />  
     <param name="placeAngleY" value="1.57075" />
     <param name="placeAngleZ" value="0.0" /> 
-	 <param name="placeAngleDelta" value="$(eval -45.0*3.1415/180.0)" />
+	 <param name="placeAngleDelta" value="$(eval -0.0*3.1415/180.0)" />
 
     <param name="prePlaceXdelta" value="0.0" /> 
     <param name="prePlaceYdelta" value="-0.20" /> 

@@ -303,7 +303,7 @@ void goToInitialPos(actionlib::SimpleActionClient<iiwa_interp::RLabinterpolation
    interpGoal.planned_trajectory.points[1].positions.resize(7);
    interpGoal.planned_trajectory.points[1].velocities.resize(7);
    interpGoal.planned_trajectory.points[1].accelerations.resize(7);
-   interpGoal.planned_trajectory.points[1].time_from_start = ros::Duration(10.0);
+   interpGoal.planned_trajectory.points[1].time_from_start = ros::Duration(4.0);
 	for( int j = 0; j<7; j++ ){
 
      interpGoal.planned_trajectory.points[1].positions[j] = start_conf[j];
@@ -359,6 +359,9 @@ int main (int argc, char **argv)
   nodehandle.getParam("placePosY", placePosY);
   nodehandle.getParam("placePosZdelta", placePosZdelta);
   nodehandle.getParam("hShelfMultipler", hShelfMultipler);
+
+  double placeAngleDelta;
+  nodehandle.getParam("placeAngleDelta", placeAngleDelta);
 
   nodehandle.getParam("safeRetraitXdelta", safeRetraitXdelta);
   nodehandle.getParam("safeRetraitYdelta", safeRetraitYdelta);
@@ -541,6 +544,10 @@ int main (int argc, char **argv)
 
   // PLACE
   orientation.setRPY(placeAngleX, placeAngleY, placeAngleZ);
+  tf2::Quaternion delta_q;
+  delta_q.setRotation ( tf2::Vector3(0,0,1) , placeAngleDelta);
+  orientation = orientation * delta_q;
+  //cout << "QUATERNION COMBINED ---> " << tf2::toMsg(orientation) << endl;
   target_pose.orientation = tf2::toMsg(orientation);
   target_pose.position.x = placePosX;
   target_pose.position.y = placePosY;
@@ -679,7 +686,8 @@ char ans = askForChar( "Continue? [y = YES / n = no / e = exit ]: " );
       }
       case SEQUENCE_RELEASE:{
         cout << "SEQUENCE_RELEASE" << endl;
-        slipping_control.grasp(0.0);
+		  if(placeAngleDelta == 0)
+        	slipping_control.grasp(0.0);
         slipping_control.home();
         break;
       }

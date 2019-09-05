@@ -6,20 +6,20 @@
 
   <node name="rlabplanner_client_v" pkg="exp_piv20" type="rlabplanner_client_denkmit" respawn="false" launch-prefix="$(arg launch_prefix)" output="screen">
 
-    <param name="objDimX" value="0.140" />
-    <param name="objDimY" value="0.060" />
-    <param name="objDimZ" value="0.040" />
+    <param name="objDimX" value="0.065" />
+    <param name="objDimY" value="0.065" />
+    <param name="objDimZ" value="0.055" />
 
-    <param name="objPosX" value="0.715" /> <!--0.77--> 
-    <param name="objPosY" value="-0.1375" />  
-    <param name="objPosZ" value="0.030" />  
+    <param name="objPosX" value="0.75" />  
+    <param name="objPosY" value="-0.27" />  
+    <param name="objPosZ" value="0.0375" /> 
 
     <param name="prePickPosZdelta" value="0.11" />
 
-    <param name="pickPosXdelta" value="-0.015" /> 
+    <param name="pickPosXdelta" value="0.005" /> 
     <param name="pickPosYdelta" value="0.0" /> 
-    <param name="pickPosZdelta" value="-0.01" /> <!--  -0.005  --> 
-  
+    <param name="pickPosZdelta" value="0.005" /> 
+ 
     <param name="hTable" value="0.85" />  
     <param name="hShelf" value="0.157" />  
 
@@ -31,18 +31,18 @@
     <param name="prePlaceAngleY" value="0.0" /> 
     <param name="prePlaceAngleZ" value="1.57075" /> 
 
-    <param name="placeAngleX" value="3.1415" />  
-    <param name="placeAngleY" value="1.57075" />
-    <param name="placeAngleZ" value="0.0" /> 
-	 <param name="placeAngleDelta" value="$(eval -45.0*3.1415/180.0)" />
+    <param name="placeAngleX" value="-1.57075" />  
+    <param name="placeAngleY" value="0.0" />
+    <param name="placeAngleZ" value="1.57075" /> 
+	 <param name="placeAngleDelta" value="$(eval -42.0*3.1415/180.0)" />
 
     <param name="prePlaceXdelta" value="0.0" /> 
     <param name="prePlaceYdelta" value="-0.20" /> 
-    <param name="prePlaceZdelta" value="0.02" /> 
+    <param name="prePlaceZdelta" value="0.05" /> 
 
     <param name="placePosX" value="0.70" />
-    <param name="placePosY" value="0.50" />  
-    <param name="placePosZdelta" value="0.02" />
+    <param name="placePosY" value="0.55" />  
+    <param name="placePosZdelta" value="0.03" />
 
     <param name="hShelfMultipler" value="2.0" />
 

@@ -24,16 +24,17 @@
     <param name="hShelf" value="0.157" />  
 
     <param name="pickAngleX" value="-1.57075" />  
-    <param name="pickAngleY" value="0.0" /> <!-- 0.785 = M_PI/4.0-->
+    <param name="pickAngleY" value="0.0" />
     <param name="pickAngleZ" value="0.0" />  
 
     <param name="prePlaceAngleX" value="-1.57075" />  
-    <param name="prePlaceAngleY" value="0.0" /> <!-- 0.785 = M_PI/4.0-->
+    <param name="prePlaceAngleY" value="0.0" />
     <param name="prePlaceAngleZ" value="1.57075" /> 
 
     <param name="placeAngleX" value="3.1415" />  
-    <param name="placeAngleY" value="1.57075" /> <!-- 0.785 = M_PI/4.0-->
+    <param name="placeAngleY" value="1.57075" />
     <param name="placeAngleZ" value="0.0" /> 
+	 <param name="placeAngleDelta" value="$(eval -30.0*3.1415/180.0*0.0)" />
 
     <param name="prePlaceXdelta" value="0.0" /> 
     <param name="prePlaceYdelta" value="-0.3" /> 
