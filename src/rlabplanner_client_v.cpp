@@ -85,9 +85,101 @@ bool detach_object = false;
 bool finished_before_timeout = false;
 std::vector<double> current_joint_values;
 std::vector<double> start_joint_values;
+std::vector<double> start_conf;
 
 sun_plan_msgs::RLabplannerGoal plannerGoal;
 iiwa_interp::RLabinterpolationGoal interpGoal;
+
+void readJointPos(const iiwa_msgs::JointPosition jointStateMsg)
+{
+	start_joint_values[0] = jointStateMsg.position.a1;
+	start_joint_values[1] = jointStateMsg.position.a2;
+	start_joint_values[2] = jointStateMsg.position.a3;
+	start_joint_values[3] = jointStateMsg.position.a4;
+	start_joint_values[4] = jointStateMsg.position.a5;
+	start_joint_values[5] = jointStateMsg.position.a6;
+	start_joint_values[6] = jointStateMsg.position.a7;
+        //ROS_INFO("ACQUISITA!!!!!!!!!!!!!!!");
+	start_conf_acquired = true;	
+	//iiwa_current_state.shutdown();
+}
+
+void realJointPosition()
+{
+   
+   cout << "realJointPosition" << endl;
+   ros::NodeHandle nh;
+
+   ros::Rate loop_rate = ros::Rate(1000);
+
+   ros::Subscriber iiwa_current_state = nh.subscribe("/iiwa/state/JointPosition", 1, readJointPos);
+	start_conf_acquired = false;
+  while(start_conf_acquired == false)
+  {
+     ros::spinOnce();   
+     loop_rate.sleep();  
+  }
+  iiwa_current_state.shutdown();
+  cout << "realJointPosition OK" << endl;
+  for(int i=0; i<start_joint_values.size(); i++){
+  	 cout << "a" << i << ":" << start_joint_values[i] << endl;
+  }
+
+}
+
+void goToInitialPos(actionlib::SimpleActionClient<iiwa_interp::RLabinterpolationAction>& ac_interp)
+{
+
+   char ans = askForChar( "goToInitialPos? [y = YES / n = no / e = exit ]: " );
+		switch( ans ){
+			case 'n' :
+			case 'N' :{
+				exit(-1);
+			        break;}
+			case 'y' :
+			case 'Y' :
+			case 's' :
+			case 'S' :
+				break;
+			default:
+				exit(1);			
+		}
+		ans = 0;
+
+   realJointPosition();
+
+	iiwa_interp::RLabinterpolationGoal interpGoal;
+	interpGoal.planned_trajectory.points.resize(2);
+	interpGoal.planned_trajectory.points[0].positions.resize(7);
+   interpGoal.planned_trajectory.points[0].velocities.resize(7);
+   interpGoal.planned_trajectory.points[0].accelerations.resize(7);
+   interpGoal.planned_trajectory.points[0].time_from_start = ros::Duration(0.0);
+
+	for( int j = 0; j<7; j++ ){
+
+     interpGoal.planned_trajectory.points[0].positions[j] = start_joint_values[j];
+     interpGoal.planned_trajectory.points[0].velocities[j] = 0.0;
+     interpGoal.planned_trajectory.points[0].accelerations[j] = 0.0;
+	}
+	
+   interpGoal.planned_trajectory.points[1].positions.resize(7);
+   interpGoal.planned_trajectory.points[1].velocities.resize(7);
+   interpGoal.planned_trajectory.points[1].accelerations.resize(7);
+   interpGoal.planned_trajectory.points[1].time_from_start = ros::Duration(4.0);
+	for( int j = 0; j<7; j++ ){
+
+     interpGoal.planned_trajectory.points[1].positions[j] = start_conf[j];
+     interpGoal.planned_trajectory.points[1].velocities[j] = 0.0;
+     interpGoal.planned_trajectory.points[1].accelerations[j] = 0.0;
+	}
+
+    ac_interp.sendGoal(interpGoal);
+    ac_interp.waitForResult(); 	
+
+  cout << "goToInitialPos() ok" << endl;
+	
+}
+
 
 void getCurretRobotConfig(std::string group_name_)
 {
@@ -222,21 +314,6 @@ void addCollisionObject(moveit::planning_interface::PlanningSceneInterface& plan
 	planning_scene_interface.applyCollisionObject(collision_object);
 }
 
-void readJointPos(const iiwa_msgs::JointPosition jointStateMsg)
-{
-	start_joint_values[0] = jointStateMsg.position.a1;
-	start_joint_values[1] = jointStateMsg.position.a2;
-	start_joint_values[2] = jointStateMsg.position.a3;
-	start_joint_values[3] = jointStateMsg.position.a4;
-	start_joint_values[4] = jointStateMsg.position.a5;
-	start_joint_values[5] = jointStateMsg.position.a6;
-	start_joint_values[6] = jointStateMsg.position.a7;
-        //ROS_INFO("ACQUISITA!!!!!!!!!!!!!!!");
-	start_conf_acquired = true;	
-	//iiwa_current_state.shutdown();
-}
-
-
 int main (int argc, char **argv)
 {
   ros::init(argc, argv, "rlabplanner_client_v");
@@ -294,16 +371,24 @@ int main (int argc, char **argv)
   ROS_INFO("INTERPOLATION ACTION SERVER started, sending plannerGoal.");
 
   // Starting the pipeline
-  iiwa_current_state = nh.subscribe("/iiwa/state/JointPosition", 1, readJointPos);
+  // Starting the pipeline
+
+  start_joint_values.resize(7);
+
+  start_conf.push_back(-0.730409085751);
+  start_conf.push_back(1.32398116589);
+  start_conf.push_back(1.97483479977);
+  start_conf.push_back(-1.42154753208);
+  start_conf.push_back(-0.187344014645);
+  start_conf.push_back(0.870962619781);
+  start_conf.push_back(-2.5709233284);
+
+  goToInitialPos(ac_interp);
+
 
   ROS_INFO("Read current robot start configuration..");
-  start_joint_values.resize(7);
-  while(start_conf_acquired == false)
-  {
-     ros::spinOnce();   
-     loop_rate->sleep();  
-  }
-  iiwa_current_state.shutdown();
+
+  realJointPosition();
 
   setInitialPosition();
 
@@ -511,6 +596,13 @@ int main (int argc, char **argv)
 
 execute:
   //ESECUZIONE
+
+  //ESECUZIONE
+while(true){
+
+goToInitialPos(ac_interp);
+slipping_control.home();
+
   for( int i=0; i<all_traj.size(); i++ )
   {
 cout << "traj " << i << "last time = " << all_traj[i].points.back().time_from_start.toSec() << endl;
@@ -545,7 +637,7 @@ char ans = askForChar( "Continue? [y = YES / n = no / e = exit ]: " );
       }
       case SEQUENCE_GRASP:{
         cout << "SEQUENCE_GRASP" << endl;
-        slipping_control.grasp(2.0);
+        slipping_control.grasp(1.2);
 		ans = askForChar( "Continue? [y = YES / n = no / e = exit ]: " );
 		switch( ans ){
 			case 'n' :
@@ -590,6 +682,7 @@ cout << "traj " << i << "end" << endl;
     
   }
 
+}
 
   //exit
   return 0;
